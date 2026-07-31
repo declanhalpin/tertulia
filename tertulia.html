@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Tertulia — practica tu español</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F6F0E4;
+    --ink: #262220;
+    --tile-blue: #2B5876;
+    --tile-gold: #C98A2C;
+    --tile-clay: #B24C3B;
+    --tile-olive: #4A6B4D;
+    --line: rgba(38,34,32,0.12);
+    --muted: rgba(38,34,32,0.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(43,88,118,0.06) 0, transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(201,138,44,0.08) 0, transparent 40%);
+    font-family:'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    display:flex;
+    justify-content:center;
+  }
+  .app{width:100%;max-width:520px;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;}
+
+  header{padding:26px 20px 14px;border-bottom:1px solid var(--line);position:relative;overflow:hidden;}
+  .tile-strip{
+    position:absolute;top:0;left:0;right:0;height:6px;
+    background:repeating-linear-gradient(90deg,
+      var(--tile-blue) 0 16px, var(--tile-gold) 16px 32px,
+      var(--tile-clay) 32px 48px, var(--tile-olive) 48px 64px);
+    opacity:.85;
+  }
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:30px;margin:10px 0 2px;letter-spacing:-.01em;}
+  .sub{font-size:14px;color:var(--muted);margin:0 0 12px;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    font:500 13px/1 'Inter',sans-serif;padding:8px 12px;border-radius:999px;
+    border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);
+    transition:border-color .15s,color .15s,transform .1s;
+  }
+  .chip:hover{border-color:var(--tile-blue);color:var(--tile-blue);}
+  .chip:active{transform:scale(.97);}
+
+  main{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px;
+       -webkit-overflow-scrolling:touch;}
+  .msg{max-width:82%;padding:11px 14px;border-radius:14px;font-size:15px;line-height:1.55;white-space:pre-wrap;}
+  .msg.assistant{
+    align-self:flex-start;background:#fff;border:1px solid var(--line);
+    border-bottom-left-radius:4px;cursor:pointer;position:relative;
+    transition:border-color .15s;
+  }
+  .msg.assistant:hover{border-color:var(--tile-blue);}
+  .msg.assistant.speaking{border-color:var(--tile-clay);box-shadow:0 0 0 2px rgba(178,76,59,.12);}
+  .msg.assistant::after{
+    content:'↻ tocar para repetir';display:block;margin-top:6px;
+    font-size:11px;color:var(--muted);opacity:.7;
+  }
+  .msg.user{align-self:flex-end;background:var(--tile-blue);color:#fff;border-bottom-right-radius:4px;}
+  .msg.system-note{align-self:center;font-size:12px;color:var(--muted);background:none;padding:4px;max-width:95%;text-align:center;}
+  .msg.system-note.diag{
+    text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11.5px;line-height:1.6;background:#fff;border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;color:var(--ink);max-width:100%;align-self:stretch;
+  }
+
+  .typing{align-self:flex-start;display:flex;gap:4px;padding:13px 14px;background:#fff;
+          border:1px solid var(--line);border-radius:14px;border-bottom-left-radius:4px;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--tile-blue);opacity:.4;
+               animation:bounce 1.1s infinite ease-in-out;}
+  .typing span:nth-child(2){animation-delay:.15s;}
+  .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+  footer{border-top:1px solid var(--line);padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:var(--paper);}
+  .speed-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .speed-row label{font-size:12px;color:var(--muted);white-space:nowrap;}
+  input[type=range]{flex:1;accent-color:var(--tile-blue);height:20px;}
+  #speed-val{font:600 12px/1 'Inter',sans-serif;color:var(--tile-blue);min-width:58px;text-align:right;}
+
+  .row{display:flex;align-items:center;gap:8px;}
+  input[type=text]{
+    flex:1;font:400 16px/1.3 'Inter',sans-serif;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);outline:none;min-width:0;
+  }
+  input[type=text]:focus{border-color:var(--tile-blue);}
+  button.icon-btn{
+    flex-shrink:0;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;
+    cursor:pointer;color:var(--ink);transition:transform .1s,opacity .15s;
+  }
+  button.icon-btn:active{transform:scale(.94);}
+  button.icon-btn:disabled{opacity:.35;cursor:not-allowed;}
+  :focus-visible{outline:2px solid var(--tile-blue);outline-offset:2px;}
+  #mic-btn.listening{background:var(--tile-clay);border-color:var(--tile-clay);color:#fff;animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(178,76,59,.4)}70%{box-shadow:0 0 0 10px rgba(178,76,59,0)}100%{box-shadow:0 0 0 0 rgba(178,76,59,0)}}
+  #speak-toggle.off{opacity:.4;}
+  #send-btn{background:var(--tile-blue);border-color:var(--tile-blue);color:#fff;}
+  .hint{font-size:11px;text-align:center;color:var(--muted);margin:8px 0 0;min-height:14px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="tile-strip"></div>
+    <h1>Tertulia</h1>
+    <p class="sub">practica tu español · en voz alta, despacio</p>
+    <div class="chips">
+      <button class="chip" data-prompt="Vamos a hacer un juego de rol en un café en España. Tú eres el camarero, yo soy el cliente. Empieza tú, con frases muy cortas.">☕ Café</button>
+      <button class="chip" data-prompt="Dame UNA frase corta para completar con el subjuntivo, empezando con 'Quiero que tú...' o 'Espero que tú...'. Pon el infinitivo entre paréntesis. Solo la frase.">📝 Subjuntivo</button>
+      <button class="chip" data-prompt="Pregúntame algo corto y simple sobre mi día o mi trabajo.">🗓️ Mi día</button>
+      <button class="chip" id="reset-chip">↺ Empezar de nuevo</button>
+      <button class="chip" id="diag-chip">🔧 Diagnóstico</button>
+    </div>
+  </header>
+
+  <main id="chat" aria-live="polite" aria-label="Conversación"></main>
+
+  <footer>
+    <div class="speed-row">
+      <label for="speed">Velocidad</label>
+      <input type="range" id="speed" min="0.45" max="1.0" step="0.05" value="0.7" aria-label="Velocidad de la voz" />
+      <span id="speed-val">muy lento</span>
+    </div>
+    <div class="row">
+      <button class="icon-btn" id="speak-toggle" aria-label="Activar o desactivar la voz">🔊</button>
+      <input type="text" id="text-input" lang="es" autocapitalize="sentences" autocorrect="on"
+             spellcheck="true" placeholder="Escribe o habla…" autocomplete="off"
+             aria-label="Tu mensaje" />
+      <button class="icon-btn" id="mic-btn" aria-label="Hablar por micrófono">🎙️</button>
+      <button class="icon-btn" id="send-btn" aria-label="Enviar mensaje">➤</button>
+    </div>
+    <p class="hint" id="hint">Toca el micrófono y habla en español</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var chatEl=document.getElementById('chat');
+var inputEl=document.getElementById('text-input');
+var micBtn=document.getElementById('mic-btn');
+var sendBtn=document.getElementById('send-btn');
+var speakToggle=document.getElementById('speak-toggle');
+var hint=document.getElementById('hint');
+var speedEl=document.getElementById('speed');
+var speedVal=document.getElementById('speed-val');
+var resetChip=document.getElementById('reset-chip');
+
+var history=[];
+var autoSpeak=true;
+var spanishVoice=null;
+var busy=false;
+var ttsPrimed=false;
+var rate=parseFloat(speedEl.value);
+var MAX_TURNS=12;
+
+var GREETING='¡Hola! Soy tu compañero de conversación. Habla o escribe, despacio, en español. ¿Cómo estás hoy?';
+
+var SYSTEM_PROMPT=[
+'You are a warm, patient Spanish conversation partner for Declan, a beginner-to-intermediate learner practicing Peninsular (Spain) Spanish.',
+'',
+'Rules:',
+'- Reply ONLY in Spanish. Never switch to English, except one bridging word in parentheses if truly necessary.',
+'- Use VERY short, simple sentences. Maximum 2-3 short sentences per turn, unless he explicitly asks for a grammar explanation.',
+'- Prefer vocabulary and grammar typical of Spain (vosotros, "vale", "coger", "ordenador") where natural.',
+'- Write in a style that reads slowly aloud: short clauses, common words, no long subordinate chains.',
+'- His input comes from speech-to-text and often has transcription errors. If a message looks garbled, do NOT invent meaning. Ask briefly: "¿Puedes repetir, por favor?"',
+'- If he makes a real grammar or vocabulary mistake, correct it gently in one short line, then continue the conversation naturally.',
+'- Offer subjunctive practice when it fits: fill-in-the-blank prompts covering deseos, dudas, and emociones.',
+'- Stay fully in character during role-play scenarios (café, tienda, tren) until he stops.',
+'- Never write bullet lists or markdown. Plain conversational sentences only, so the text reads well aloud.'
+].join('\n');
+
+/* ---------- speech synthesis ---------- */
+var ttsAvailable = (typeof window!=='undefined')
+  && ('speechSynthesis' in window)
+  && (typeof window.SpeechSynthesisUtterance!=='undefined');
+
+function pickSpanishVoice(){
+  if(!ttsAvailable) return;
+  try{
+    var voices=window.speechSynthesis.getVoices()||[];
+    spanishVoice = voices.filter(function(v){return v.lang==='es-ES';})[0]
+                || voices.filter(function(v){return v.lang && v.lang.indexOf('es')===0;})[0]
+                || null;
+  }catch(e){}
+}
+if(ttsAvailable){
+  try{
+    window.speechSynthesis.addEventListener('voiceschanged',pickSpanishVoice);
+    pickSpanishVoice();
+  }catch(e){}
+}
+
+function stopSpeaking(){
+  if(!ttsAvailable) return;
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+  var prev=chatEl.querySelector('.msg.assistant.speaking');
+  if(prev) prev.classList.remove('speaking');
+}
+
+function speak(text, bubble){
+  if(!ttsAvailable || !text) return;
+  try{
+    stopSpeaking();
+    if(!spanishVoice) pickSpanishVoice();
+    var utter=new window.SpeechSynthesisUtterance(text);
+    utter.lang='es-ES';
+    if(spanishVoice) utter.voice=spanishVoice;
+    utter.rate=rate;
+    utter.pitch=1.0;
+    if(bubble){
+      utter.onstart=function(){ bubble.classList.add('speaking'); };
+      utter.onend=function(){ bubble.classList.remove('speaking'); };
+      utter.onerror=function(){ bubble.classList.remove('speaking'); };
+    }
+    window.speechSynthesis.speak(utter);
+    ttsPrimed=true;
+  }catch(e){}
+}
+
+/* ---------- speed control ---------- */
+function speedLabel(r){
+  if(r<=0.55) return 'muy lento';
+  if(r<=0.7)  return 'lento';
+  if(r<=0.85) return 'normal';
+  return 'rápido';
+}
+speedVal.textContent=speedLabel(rate);
+speedEl.addEventListener('input',function(){
+  rate=parseFloat(speedEl.value);
+  speedVal.textContent=speedLabel(rate);
+});
+
+/* ---------- messages ---------- */
+function addMessage(role,text){
+  var div=document.createElement('div');
+  div.className='msg '+role;
+  div.textContent=text;
+  if(role==='assistant' && ttsAvailable){
+    div.setAttribute('role','button');
+    div.setAttribute('tabindex','0');
+    div.addEventListener('click',function(){ speak(text,div); });
+    div.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); speak(text,div); }
+    });
+  }
+  chatEl.appendChild(div);
+  chatEl.scrollTop=chatEl.scrollHeight;
+  return div;
+}
+function addTyping(){
+  var div=document.createElement('div');
+  div.className='typing'; div.id='typing-indicator';
+  div.innerHTML='<span></span><span></span><span></span>';
+  chatEl.appendChild(div);
+  chatEl.scrollTop=chatEl.scrollHeight;
+}
+function removeTyping(){
+  var el=document.getElementById('typing-indicator');
+  if(el) el.remove();
+}
+function setBusy(v){
+  busy=v;
+  sendBtn.disabled=v;
+  micBtn.disabled=v||!recognition;
+}
+
+/* ---------- API ---------- */
+function trimHistory(){
+  if(history.length>MAX_TURNS) history=history.slice(history.length-MAX_TURNS);
+  while(history.length && history[0].role!=='user') history.shift();
+}
+
+async function sendToClaude(userText){
+  if(busy) return;
+  setBusy(true);
+  history.push({role:'user',content:userText});
+  trimHistory();
+  addTyping();
+  try{
+    var response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1000,
+        system:SYSTEM_PROMPT,
+        messages:history
+      })
+    });
+    var data=await response.json();
+    removeTyping();
+
+    if(!response.ok || data.error){
+      var msg=(data && data.error && data.error.message) ? data.error.message : ('HTTP '+response.status);
+      history.pop();
+      addMessage('system-note','No se pudo responder ('+msg+'). Inténtalo otra vez.');
+      return;
+    }
+
+    var blocks=(data.content||[]).filter(function(b){return b.type==='text';})
+                                 .map(function(b){return b.text;});
+    var reply=blocks.join('\n').trim();
+    if(!reply){
+      history.pop();
+      addMessage('system-note','Respuesta vacía. Inténtalo otra vez.');
+      return;
+    }
+    history.push({role:'assistant',content:reply});
+    trimHistory();
+    var bubble=addMessage('assistant',reply);
+    if(autoSpeak) speak(reply,bubble);
+  }catch(err){
+    removeTyping();
+    history.pop();
+    addMessage('system-note','Problema de conexión. Inténtalo otra vez.');
+    console.error(err);
+  }finally{
+    setBusy(false);
+  }
+}
+
+function handleSend(){
+  var text=inputEl.value.trim();
+  if(!text||busy) return;
+  addMessage('user',text);
+  inputEl.value='';
+  sendToClaude(text);
+}
+
+sendBtn.addEventListener('click',handleSend);
+inputEl.addEventListener('keydown',function(e){ if(e.key==='Enter') handleSend(); });
+
+speakToggle.addEventListener('click',function(){
+  autoSpeak=!autoSpeak;
+  speakToggle.classList.toggle('off',!autoSpeak);
+  speakToggle.textContent=autoSpeak?'🔊':'🔇';
+  if(!autoSpeak) stopSpeaking();
+  else if(!ttsPrimed) speak('Vale.',null);
+});
+if(!ttsAvailable){
+  speakToggle.disabled=true;
+  speakToggle.title='Audio no disponible en este navegador';
+}
+
+Array.prototype.forEach.call(document.querySelectorAll('.chip[data-prompt]'),function(chip){
+  chip.addEventListener('click',function(){
+    if(busy) return;
+    addMessage('user',chip.textContent.trim());
+    sendToClaude(chip.getAttribute('data-prompt'));
+  });
+});
+
+resetChip.addEventListener('click',function(){
+  stopSpeaking();
+  history=[];
+  chatEl.innerHTML='';
+  addMessage('assistant',GREETING);
+  hint.textContent='Conversación reiniciada.';
+});
+
+/* ---------- diagnóstico ---------- */
+var diagChip=document.getElementById('diag-chip');
+
+function line(ok,label,detail){
+  return (ok===true?'✅ ':ok===false?'❌ ':'⚠️ ')+label+(detail?': '+detail:'');
+}
+
+async function runDiagnostics(){
+  var out=[];
+  var inFrame=false;
+  try{ inFrame=(window.self!==window.top); }catch(e){ inFrame=true; }
+
+  out.push('— ENTORNO —');
+  out.push(line(window.isSecureContext===true,'Contexto seguro (HTTPS)',
+    location.protocol));
+  out.push(line(!inFrame,'Fuera de un iframe', inFrame?'estás dentro de un marco':'ok'));
+
+  out.push('');
+  out.push('— AUDIO (escuchar) —');
+  out.push(line(ttsAvailable,'API de voz disponible'));
+  var voices=[];
+  try{ voices=window.speechSynthesis.getVoices()||[]; }catch(e){}
+  var esVoices=voices.filter(function(v){return v.lang&&v.lang.indexOf('es')===0;});
+  out.push(line(voices.length>0,'Voces cargadas', voices.length+' en total'));
+  out.push(line(esVoices.length>0,'Voz en español',
+    esVoices.length?esVoices.map(function(v){return v.name+' ('+v.lang+')';}).slice(0,3).join(', '):'ninguna'));
+  out.push(line(!!spanishVoice,'Voz elegida', spanishVoice?spanishVoice.name:'—'));
+
+  out.push('');
+  out.push('— MICRÓFONO (hablar) —');
+  out.push(line(!!SpeechRecognition,'Reconocimiento de voz disponible'));
+  out.push(line(!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia),'Acceso a dispositivos de audio'));
+  if(navigator.permissions&&navigator.permissions.query){
+    try{
+      var st=await navigator.permissions.query({name:'microphone'});
+      out.push(line(st.state==='granted', 'Permiso del micrófono', st.state));
+    }catch(e){
+      out.push(line(null,'Permiso del micrófono','no se puede consultar'));
+    }
+  }else{
+    out.push(line(null,'Permiso del micrófono','no consultable'));
+  }
+
+  out.push('');
+  out.push('— VEREDICTO —');
+  if(!window.isSecureContext){
+    out.push('El micrófono NO funcionará. La página no es HTTPS.');
+  }else if(inFrame){
+    out.push('El micrófono probablemente está bloqueado por el marco. Abre la página directamente.');
+  }else if(!SpeechRecognition){
+    out.push('Este navegador no soporta el micrófono. Usa Chrome.');
+  }else{
+    out.push('El micrófono debería funcionar. Toca 🎙️ y acepta el permiso.');
+  }
+  if(!ttsAvailable){
+    out.push('El audio NO está disponible en este navegador.');
+  }else if(!esVoices.length){
+    out.push('Hay audio, pero sin voz española. Instala Español (España) en los ajustes del móvil.');
+  }else{
+    out.push('El audio debería funcionar. Escucha la prueba ahora.');
+  }
+
+  var diagBubble=addMessage('system-note',out.join('\n'));
+  diagBubble.classList.add('diag');
+
+  if(ttsAvailable){
+    var b=addMessage('assistant','Prueba de sonido. Uno, dos, tres.');
+    speak('Prueba de sonido. Uno, dos, tres.', b);
+  }
+}
+
+diagChip.addEventListener('click',function(){ runDiagnostics(); });
+
+/* ---------- speech recognition ---------- */
+var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+var recognition=null;
+var listening=false;
+
+if(SpeechRecognition){
+  recognition=new SpeechRecognition();
+  recognition.lang='es-ES';
+  recognition.interimResults=true;
+  recognition.continuous=false;
+  recognition.maxAlternatives=1;
+
+  recognition.onstart=function(){
+    listening=true;
+    micBtn.classList.add('listening');
+    hint.textContent='Escuchando…';
+  };
+  recognition.onend=function(){
+    listening=false;
+    micBtn.classList.remove('listening');
+    if(inputEl.value.trim()){
+      hint.textContent='Revisa el texto y pulsa ➤ para enviar';
+      inputEl.focus();
+    }else{
+      hint.textContent='Toca el micrófono y habla en español';
+    }
+  };
+  recognition.onerror=function(e){
+    listening=false;
+    micBtn.classList.remove('listening');
+    var reasons={
+      'not-allowed':'Micrófono bloqueado. Descarga el archivo y ábrelo en Chrome.',
+      'service-not-allowed':'Micrófono bloqueado por el navegador. Ábrelo en Chrome.',
+      'no-speech':'No he oído nada. Habla más cerca del micrófono.',
+      'audio-capture':'No encuentro ningún micrófono en este dispositivo.',
+      'network':'Problema de red con el reconocimiento de voz.',
+      'aborted':'Escucha cancelada.'
+    };
+    hint.textContent=reasons[e.error]||('Error de micrófono: '+e.error);
+  };
+  recognition.onresult=function(event){
+    var text='';
+    for(var i=0;i<event.results.length;i++){ text+=event.results[i][0].transcript; }
+    inputEl.value=text.trim();
+  };
+
+  micBtn.addEventListener('click',function(){
+    if(listening){ recognition.stop(); return; }
+    stopSpeaking();
+    inputEl.value='';
+    try{ recognition.start(); }
+    catch(e){ hint.textContent='El micrófono ya está activo.'; }
+  });
+}else{
+  micBtn.disabled=true;
+  hint.textContent='Este navegador no soporta el micrófono. Escribe tu mensaje.';
+}
+
+if(!SpeechRecognition && !ttsAvailable){
+  hint.textContent='El audio no está disponible aquí. Descarga el archivo y ábrelo en Chrome.';
+}
+
+/* ---------- start ---------- */
+addMessage('assistant',GREETING);
+})();
+</script>
+</body>
+</html>
